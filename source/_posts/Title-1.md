@@ -5,3 +5,6 @@ tags: golang
 intro : 'talk about golang'
 comments: false
 ---
+
+- goroutine
+- channel
