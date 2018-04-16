@@ -8,20 +8,79 @@
 
 <span class="token keyword">import</span> <span class="token punctuation">(</span>
     <span class="token string">"container/list"</span>
+    <span class="token string">"fmt"</span>
     <span class="token string">"sync"</span>
 <span class="token punctuation">)</span>
+
+<span class="token keyword">type</span> item <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+    Key   <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span>
+    Value <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
 
 <span class="token keyword">type</span> FIFOCache <span class="token keyword">struct</span> <span class="token punctuation">{</span>
     mu       sync<span class="token punctuation">.</span>Mutex
     list     <span class="token operator">*</span>list<span class="token punctuation">.</span>List
-    capacity <span class="token builtin">int64</span>
+    table    <span class="token keyword">map</span><span class="token punctuation">[</span><span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token operator">*</span>list<span class="token punctuation">.</span>Element
+    capacity <span class="token builtin">int</span>
 <span class="token punctuation">}</span>
 
-<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Get</span><span class="token punctuation">(</span>k <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+<span class="token keyword">func</span> <span class="token function">NewFIFOCache</span><span class="token punctuation">(</span><span class="token builtin">cap</span> <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token operator">*</span>FIFOCache <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> <span class="token operator">&amp;</span>FIFOCache<span class="token punctuation">{</span>
+        capacity<span class="token punctuation">:</span> <span class="token builtin">cap</span><span class="token punctuation">,</span>
+        list<span class="token punctuation">:</span>     list<span class="token punctuation">.</span><span class="token function">New</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">,</span>
+        table<span class="token punctuation">:</span>    <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">map</span><span class="token punctuation">[</span><span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">]</span><span class="token operator">*</span>list<span class="token punctuation">.</span>Element<span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
-<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Set</span><span class="token punctuation">(</span>k<span class="token punctuation">,</span> v <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token builtin">error</span> <span class="token punctuation">{</span>
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Count</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token builtin">int</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> f<span class="token punctuation">.</span>list<span class="token punctuation">.</span><span class="token function">Len</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Contains</span><span class="token punctuation">(</span>key <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token builtin">bool</span> <span class="token punctuation">{</span>
+    <span class="token boolean">_</span><span class="token punctuation">,</span> ok <span class="token operator">:=</span> f<span class="token punctuation">.</span>table<span class="token punctuation">[</span>key<span class="token punctuation">]</span>
+    <span class="token keyword">return</span> ok
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Get</span><span class="token punctuation">(</span>key <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span> <span class="token punctuation">{</span>
+    <span class="token keyword">if</span> element<span class="token punctuation">,</span> ok <span class="token operator">:=</span> f<span class="token punctuation">.</span>table<span class="token punctuation">[</span>key<span class="token punctuation">]</span><span class="token punctuation">;</span> ok <span class="token punctuation">{</span>
+        <span class="token keyword">return</span> element<span class="token punctuation">.</span>Value<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>item<span class="token punctuation">)</span><span class="token punctuation">.</span>Value
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> <span class="token boolean">nil</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Set</span><span class="token punctuation">(</span>key<span class="token punctuation">,</span> value <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    f<span class="token punctuation">.</span>mu<span class="token punctuation">.</span><span class="token function">Lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">defer</span> f<span class="token punctuation">.</span>mu<span class="token punctuation">.</span><span class="token function">Unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span> f<span class="token punctuation">.</span>capacity <span class="token operator">></span> <span class="token number">0</span> <span class="token operator">&amp;&amp;</span> f<span class="token punctuation">.</span><span class="token function">Count</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">==</span> f<span class="token punctuation">.</span>capacity <span class="token operator">&amp;&amp;</span> <span class="token operator">!</span>f<span class="token punctuation">.</span><span class="token function">Contains</span><span class="token punctuation">(</span>key<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+        f<span class="token punctuation">.</span><span class="token function">Remove</span><span class="token punctuation">(</span>f<span class="token punctuation">.</span>list<span class="token punctuation">.</span><span class="token function">Front</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span>Value<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>item<span class="token punctuation">)</span><span class="token punctuation">.</span>Key<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">if</span> element<span class="token punctuation">,</span> ok <span class="token operator">:=</span> f<span class="token punctuation">.</span>table<span class="token punctuation">[</span>key<span class="token punctuation">]</span><span class="token punctuation">;</span> ok <span class="token punctuation">{</span>
+        element<span class="token punctuation">.</span>Value<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>item<span class="token punctuation">)</span><span class="token punctuation">.</span>Value <span class="token operator">=</span> value
+    <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+        element <span class="token operator">:=</span> f<span class="token punctuation">.</span>list<span class="token punctuation">.</span><span class="token function">PushBack</span><span class="token punctuation">(</span><span class="token operator">&amp;</span>item<span class="token punctuation">{</span>Key<span class="token punctuation">:</span> key<span class="token punctuation">,</span> Value<span class="token punctuation">:</span> value<span class="token punctuation">}</span><span class="token punctuation">)</span>
+        f<span class="token punctuation">.</span>table<span class="token punctuation">[</span>key<span class="token punctuation">]</span> <span class="token operator">=</span> element
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Remove</span><span class="token punctuation">(</span>key <span class="token keyword">interface</span><span class="token punctuation">{</span><span class="token punctuation">}</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    f<span class="token punctuation">.</span>mu<span class="token punctuation">.</span><span class="token function">Lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">defer</span> f<span class="token punctuation">.</span>mu<span class="token punctuation">.</span><span class="token function">Unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">if</span> element<span class="token punctuation">,</span> ok <span class="token operator">:=</span> f<span class="token punctuation">.</span>table<span class="token punctuation">[</span>key<span class="token punctuation">]</span><span class="token punctuation">;</span> ok <span class="token punctuation">{</span>
+        f<span class="token punctuation">.</span>list<span class="token punctuation">.</span><span class="token function">Remove</span><span class="token punctuation">(</span>element<span class="token punctuation">)</span>
+        <span class="token function">delete</span><span class="token punctuation">(</span>f<span class="token punctuation">.</span>table<span class="token punctuation">,</span> key<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token punctuation">(</span>f <span class="token operator">*</span>FIFOCache<span class="token punctuation">)</span> <span class="token function">Traverse</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+    data <span class="token operator">:=</span> f<span class="token punctuation">.</span>list<span class="token punctuation">.</span><span class="token function">Front</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token keyword">for</span> <span class="token punctuation">{</span>
+        fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span>data<span class="token punctuation">.</span>Value<span class="token punctuation">.</span><span class="token punctuation">(</span><span class="token operator">*</span>item<span class="token punctuation">)</span><span class="token punctuation">)</span>
+        <span class="token keyword">if</span> data<span class="token punctuation">.</span><span class="token function">Next</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token operator">!=</span> <span class="token boolean">nil</span> <span class="token punctuation">{</span>
+            data <span class="token operator">=</span> data<span class="token punctuation">.</span><span class="token function">Next</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+        <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+            <span class="token keyword">return</span>
+        <span class="token punctuation">}</span>
+    <span class="token punctuation">}</span>
 <span class="token punctuation">}</span>
 
 </code></pre>
