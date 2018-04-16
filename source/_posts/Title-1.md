@@ -18,20 +18,80 @@ package cache
 
 import (
 	"container/list"
+	"fmt"
 	"sync"
 )
 
+type fifoItem struct {
+	Key   interface{}
+	Value interface{}
+}
+
 type FIFOCache struct {
-	mu       sync.Mutex
+	amu      sync.Mutex
+	rmu      sync.Mutex
 	list     *list.List
-	capacity int64
+	table    map[interface{}]*list.Element
+	capacity int
 }
 
-func (f *FIFOCache) Get(k interface{}) (interface{}, error) {
+func NewFIFOCache(cap int) *FIFOCache {
+	return &FIFOCache{
+		capacity: cap,
+		list:     list.New(),
+		table:    make(map[interface{}]*list.Element),
+	}
 }
 
-func (f *FIFOCache) Set(k, v interface{}) error {
+func (f *FIFOCache) Count() int {
+	return f.list.Len()
+}
 
+func (f *FIFOCache) Contains(key interface{}) bool {
+	_, ok := f.table[key]
+	return ok
+}
+
+func (f *FIFOCache) Get(key interface{}) interface{} {
+	if element, ok := f.table[key]; ok {
+		return element.Value.(*fifoItem).Value
+	}
+	return nil
+}
+
+func (f *FIFOCache) Set(key, value interface{}) {
+	f.amu.Lock()
+	defer f.amu.Unlock()
+	if f.capacity > 0 && f.Count() == f.capacity && !f.Contains(key) {
+		f.Remove(f.list.Front().Value.(*fifoItem).Key)
+	}
+	if element, ok := f.table[key]; ok {
+		element.Value.(*fifoItem).Value = value
+	} else {
+		element := f.list.PushBack(&fifoItem{Key: key, Value: value})
+		f.table[key] = element
+	}
+}
+
+func (f *FIFOCache) Remove(key interface{}) {
+	f.rmu.Lock()
+	defer f.rmu.Unlock()
+	if element, ok := f.table[key]; ok {
+		f.list.Remove(element)
+		delete(f.table, key)
+	}
+}
+
+func (f *FIFOCache) Traverse() {
+	data := f.list.Front()
+	for {
+		fmt.Println(data.Value.(*fifoItem))
+		if data.Next() != nil {
+			data = data.Next()
+		} else {
+			return
+		}
+	}
 }
 
 ```
@@ -43,6 +103,92 @@ LFU 是最近最不常使用算法，通过为每个元素维护一个计数�
 - LRU (Least Recently Used)
 
 LRU 是最近最少使用算法，数据结构可以用双向链表实现，新来的元素插入到链表头部。如果容量满了，则删除尾部再插入到头部。访问数据的时候，如果存在返回value并移动该元元素到头部否则返回nil。以下是golang代码实现
+
+```go
+package cache
+
+import (
+	"container/list"
+	"fmt"
+	"sync"
+)
+
+type lruItem struct {
+	Key   interface{}
+	Value interface{}
+}
+
+type LRUCache struct {
+	amu      sync.Mutex
+	rmu      sync.Mutex
+	list     *list.List
+	table    map[interface{}]*list.Element
+	capacity int
+}
+
+func NewLRUCache(cap int) *LRUCache {
+	return &LRUCache{
+		capacity: cap,
+		list:     list.New(),
+		table:    make(map[interface{}]*list.Element),
+	}
+}
+
+func (l *LRUCache) Count() int {
+	return l.list.Len()
+}
+
+func (l *LRUCache) Contains(key interface{}) bool {
+	_, ok := l.table[key]
+	return ok
+}
+
+func (l *LRUCache) Get(key interface{}) interface{} {
+	l.rmu.Lock()
+	defer l.rmu.Unlock()
+	if element, ok := l.table[key]; ok {
+		l.list.MoveToBack(element)
+		return element.Value.(*lruItem).Value
+	}
+	return nil
+}
+
+func (l *LRUCache) Set(key, value interface{}) {
+	l.amu.Lock()
+	defer l.amu.Unlock()
+	if l.capacity > 0 && l.Count() == l.capacity && !l.Contains(key) {
+		l.Remove(l.list.Front().Value.(*lruItem).Key)
+	}
+	if element, ok := l.table[key]; ok {
+		element.Value.(*lruItem).Value = value
+	} else {
+		element := l.list.PushBack(&lruItem{Key: key, Value: value})
+		l.table[key] = element
+	}
+}
+
+func (l *LRUCache) Remove(key interface{}) {
+	l.rmu.Lock()
+	defer l.rmu.Unlock()
+	if element, ok := l.table[key]; ok {
+		l.list.Remove(element)
+		delete(l.table, key)
+	}
+}
+
+func (l *LRUCache) Traverse() {
+	data := l.list.Front()
+	for {
+		fmt.Println(data.Value.(*lruItem))
+		if data.Next() != nil {
+			data = data.Next()
+		} else {
+			return
+		}
+	}
+}
+
+```
  
 
 
