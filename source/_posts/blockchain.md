@@ -7,3 +7,4 @@ comments: false
 ---
 
 # Blockchain
+本文介绍区块链的数据结构以及最简单的单机实现（不包括pow, dpos等共识算法）
