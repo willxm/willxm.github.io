@@ -35,9 +35,9 @@ comments: false
  1毫秒可以生成12位（0-4095）4096个UUID，理论上单机可以生成4096000个UUID/s
 
  ## 关键代码实现
- ```golang
+ ```go
  func (sf *Snowflake) UUID() (uint64, error) {
-	const maskSequence = uint16(1<<BitLenSequence - 1)
+	const maskSequence = uint16(1 << BitLenSequence - 1)
 
 	sf.mutex.Lock()
 	defer sf.mutex.Unlock()
@@ -57,10 +57,11 @@ comments: false
 	}
 	return sf.toID()
 }
- ```
+```
 
 
 
  ## 性能测试
-
+```
  coding
+```

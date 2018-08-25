@@ -10,7 +10,7 @@ comments: false
 本文介绍区块链的数据结构以及最简单的单机实现（不包括pow, dpos等共识算法）
 
 首先定义一个最基本的block结构，其中包括区块高度，时间戳，交易信息，上个区块的Hash和这个区块的Hash
-```golang
+```go
 type Block struct {
 	Index     int
 	Timestamp int64
@@ -23,7 +23,7 @@ type Block struct {
 
 
 接下来实现其中最重要的方法生产区块
-```golang
+```go
 // Calculate the block's hash
 func CalculateHash(block Block) string {
 	record := string(block.Index) + string(block.Timestamp) + string(block.Data) + block.PrevHash
@@ -50,7 +50,7 @@ func GenerateBlock(oldBlock Block, data string) (Block, error) {
 
 
 区块链的第一个区块叫做创世区块，是由系统初始化的时候生成的，自然它的PrevHash值就是空。
-```golang
+```go
 t := time.Now()
 genesisBlock := core.Block{0, t.Unix(), "", "", ""}
 ```

@@ -12,7 +12,7 @@ comments: false
 在go1.9版本之前，map不是并发安全的，需要通过Mutex加锁来实现。在1.9之后引入了新的sync.Map
 
 ## 数据结构 
-```golang
+```go
 type Map struct {
     //在read中读取不到的时候，加锁
   	mu Mutex
@@ -26,14 +26,14 @@ type Map struct {
   }
 ```
 
-```golang
+```go
 type readOnly struct {
   	m       map[interface{}]*entry
   	amended bool // true if the dirty map contains some key not in m.
   }
 ```
 
-```golang
+```go
   type entry struct {
   	p unsafe.Pointer // *interface{}
   }
