@@ -14,29 +14,29 @@
 <li>将10位的节点ID追加到后面</li>
 <li><p>然后添加序列数，从0开始，在相同的毫秒中生成步长为1的递增序列，如果在相同的毫秒中生成的序列溢出了，则停止生成等待下一毫秒</p>
 <h2 id="理论性能"><a href="#理论性能" class="headerlink" title="理论性能"></a>理论性能</h2><p>1毫秒可以生成12位（0-4095）4096个UUID，理论上单机可以生成4096000个UUID/s</p>
-<h2 id="关键代码实现"><a href="#关键代码实现" class="headerlink" title="关键代码实现"></a>关键代码实现</h2><pre class=" language-golang"><code class="language-golang">func (sf *Snowflake) UUID() (uint64, error) {
-  const maskSequence = uint16(1 << BitLenSequence - 1)
+<h2 id="关键代码实现"><a href="#关键代码实现" class="headerlink" title="关键代码实现"></a>关键代码实现</h2><pre class=" language-go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>sf <span class="token operator">*</span>Snowflake<span class="token punctuation">)</span> <span class="token function">UUID</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token builtin">uint64</span><span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
+  <span class="token keyword">const</span> maskSequence <span class="token operator">=</span> <span class="token function">uint16</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> BitLenSequence <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span>
 
-  sf.mutex.Lock()
-  defer sf.mutex.Unlock()
+  sf<span class="token punctuation">.</span>mutex<span class="token punctuation">.</span><span class="token function">Lock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+  <span class="token keyword">defer</span> sf<span class="token punctuation">.</span>mutex<span class="token punctuation">.</span><span class="token function">Unlock</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
 
-  current := currentElapsedTime(sf.startTime)
-  if sf.elapsedTime < current {
-      sf.elapsedTime = current
-      sf.sequence = 0
-  } else {
-      //如果sequence位满了，需要等下一个时间片段
-      sf.sequence = (sf.sequence + 1) & maskSequence
-      if sf.sequence == 0 {
-          sf.elapsedTime++
-          overtime := sf.elapsedTime - current
-          time.Sleep(sleepTime((overtime)))
-      }
-  }
-  return sf.toID()
-}
+  current <span class="token operator">:=</span> <span class="token function">currentElapsedTime</span><span class="token punctuation">(</span>sf<span class="token punctuation">.</span>startTime<span class="token punctuation">)</span>
+  <span class="token keyword">if</span> sf<span class="token punctuation">.</span>elapsedTime <span class="token operator">&lt;</span> current <span class="token punctuation">{</span>
+      sf<span class="token punctuation">.</span>elapsedTime <span class="token operator">=</span> current
+      sf<span class="token punctuation">.</span>sequence <span class="token operator">=</span> <span class="token number">0</span>
+  <span class="token punctuation">}</span> <span class="token keyword">else</span> <span class="token punctuation">{</span>
+      <span class="token comment" spellcheck="true">//如果sequence位满了，需要等下一个时间片段</span>
+      sf<span class="token punctuation">.</span>sequence <span class="token operator">=</span> <span class="token punctuation">(</span>sf<span class="token punctuation">.</span>sequence <span class="token operator">+</span> <span class="token number">1</span><span class="token punctuation">)</span> <span class="token operator">&amp;</span> maskSequence
+      <span class="token keyword">if</span> sf<span class="token punctuation">.</span>sequence <span class="token operator">==</span> <span class="token number">0</span> <span class="token punctuation">{</span>
+          sf<span class="token punctuation">.</span>elapsedTime<span class="token operator">++</span>
+          overtime <span class="token operator">:=</span> sf<span class="token punctuation">.</span>elapsedTime <span class="token operator">-</span> current
+          time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span><span class="token function">sleepTime</span><span class="token punctuation">(</span><span class="token punctuation">(</span>overtime<span class="token punctuation">)</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+      <span class="token punctuation">}</span>
+  <span class="token punctuation">}</span>
+  <span class="token keyword">return</span> sf<span class="token punctuation">.</span><span class="token function">toID</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
 </code></pre>
 </li>
 </ul>
-<h2 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h2><p> coding</p>
-</article><br><br><span class="next-post"><a href="/2018/04/14/cache/" itemprop="url">Older Post ⇒</a></span><span class="prev-post"><a href="/2018/04/21/blockchain/" itemprop="url">⇐ Next Post </a></span><br><br><br></main></body></html>
+<h2 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h2><pre><code> coding
+</code></pre></article><br><br><span class="next-post"><a href="/2018/04/14/cache/" itemprop="url">Older Post ⇒</a></span><span class="prev-post"><a href="/2018/04/21/blockchain/" itemprop="url">⇐ Next Post </a></span><br><br><br></main></body></html>
