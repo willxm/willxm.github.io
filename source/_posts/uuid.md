@@ -15,24 +15,24 @@ comments: false
 
 ```
 +--------------------------------------------------------------------------+
-| 1 Bit Unused | 41 Bit Timestamp |  10 Bit NodeID  |   12 Bit Sequence ID |
+| 1 Bit Unused | 39 Bit Timestamp |  16 Bit NodeID  |   8 Bit Sequence ID |
 +--------------------------------------------------------------------------+
 ```
 
-- 使用41位来存储具有毫秒精度的时间戳
-- 10位用于存储节点ID
-- 12位用于存储序号
+- 使用39位来存储具有毫秒精度的时间戳
+- 16位用于存储节点ID
+- 8位用于存储序号
 
 
 ## 实现细节
 
-- 生成41位具有毫秒精度的时间戳
-- 将10位的节点ID追加到后面
+- 生成39位具有毫秒精度的时间戳
+- 将16位的节点ID追加到后面
 - 然后添加序列数，从0开始，在相同的毫秒中生成步长为1的递增序列，如果在相同的毫秒中生成的序列溢出了，则停止生成等待下一毫秒
 
  ## 理论性能
 
- 1毫秒可以生成12位（0-4095）4096个UUID，理论上单机可以生成4096000个UUID/s
+ 1毫秒可以生成8位（0-255）256个UUID，理论上单机可以生成256000个UUID/s
 
  ## 关键代码实现
  ```go
@@ -62,6 +62,25 @@ comments: false
 
 
  ## 性能测试
+```go
+func BenchmarkSnowflake_UUID(b *testing.B) {
+
+	sf := NewSnowflack()
+
+	for n := 0; n < b.N; n++ {
+		sf.UUID()
+	}
+}
 ```
- coding
+
+```shell
+$ go test -bench="."
+goos: darwin
+goarch: amd64
+pkg: github.com/willxm/snowflake
+BenchmarkSnowflake_UUID-4          50000             39036 ns/op
+PASS
+ok      github.com/willxm/snowflake     2.350s
 ```
+
+1e9/39036=25617.3788298
