@@ -15,7 +15,7 @@
 <li><p>然后添加序列数，从0开始，在相同的毫秒中生成步长为1的递增序列，如果在相同的毫秒中生成的序列溢出了，则停止生成等待下一毫秒</p>
 <h2 id="理论性能"><a href="#理论性能" class="headerlink" title="理论性能"></a>理论性能</h2><p>1毫秒可以生成12位（0-4095）4096个UUID，理论上单机可以生成4096000个UUID/s</p>
 <h2 id="关键代码实现"><a href="#关键代码实现" class="headerlink" title="关键代码实现"></a>关键代码实现</h2><pre class=" language-golang"><code class="language-golang">func (sf *Snowflake) UUID() (uint64, error) {
-  const maskSequence = uint16(1<<BitLenSequence - 1)
+  const maskSequence = uint16(1 << BitLenSequence - 1)
 
   sf.mutex.Lock()
   defer sf.mutex.Unlock()
