@@ -1,19 +1,19 @@
 <!DOCTYPE html><html lang="en-us"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><title>Distributed uuid generation written with golang | willxm's blog</title><meta name="description" content="Inspired by twitter snowflake"><meta name="generator" content="willxm's blog"><meta name="author" content="willxm"><meta name="keywords"><meta name="HandheldFriendly" content="True"><meta name="MobileOptimized" content="320"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=0"><link rel="stylesheet" type="text/css" href="/styles/screen.css"><link rel="apple-touch-icon" sizes="57x57" href="/images/apple-touch-icon-57x57.png"><link rel="apple-touch-icon" sizes="60x60" href="/images/apple-touch-icon-60x60.png"><link rel="apple-touch-icon" sizes="72x72" href="/images/apple-touch-icon-72x72.png"><link rel="apple-touch-icon" sizes="76x76" href="/images/apple-touch-icon-76x76.png"><link rel="apple-touch-icon" sizes="114x114" href="/images/apple-touch-icon-114x114.png"><link rel="apple-touch-icon" sizes="120x120" href="/images/apple-touch-icon-120x120.png"><link rel="apple-touch-icon" sizes="144x144" href="/images/apple-touch-icon-144x144.png"><link rel="apple-touch-icon" sizes="152x152" href="/images/apple-touch-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-180x180.png"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png"><link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png"><link rel="icon" type="image/png" sizes="128x128" href="/images/favicon-128.png"><link rel="icon" type="image/png" sizes="196x196" href="/images/favicon-196x196.png"><meta name="msapplication-TileColor" content="#FFFFFF"><meta name="msapplication-TileImage" content="mstile-144x144.png"><meta name="msapplication-square70x70logo" content="mstile-70x70.png"><meta name="msapplication-square150x150logo" content="mstile-150x150.png"><meta name="msapplication-wide310x150logo" content="mstile-310x150.png"><meta name="msapplication-square310x310logo" content="mstile-310x310.png"><link rel="stylesheet" href="/css/prism.css" type="text/css"></head><body itemscope itemtype="https://schema.org/WebPage"><header itemscope itemtype="https://schema.org/WPHeader"><div class="logo"></div><h1><a href="/" alt="willxm's blog" title="willxm's blog" itemprop="headline">willxm's blog</a></h1><p itemprop="description">a boring person</p><nav itemscope itemtype="https://schema.org/SiteNavigationElement"><ul><li itemprop="name"><a href="/ " alt="home" title="home" itemprop="url">home</a></li><li itemprop="name"><a href="/articles" alt="articles" title="articles" itemprop="url">articles</a></li><li itemprop="name"><a href="/author" alt="author" title="author" itemprop="url">author</a></li></ul></nav><div class="space"></div></header><main itemscope itemtype="https://schema.org/Blog"><article class="full"><h1 itemprop="headline" class="post-heading">Distributed uuid generation written with golang</h1><span class="page-tag-anchor"><a href="/tags/uuid" itemprop="url">#uuid
 &nbsp;&nbsp;</a></span><span class="post-meta"></span><br><br><h1 id="UUID"><a href="#UUID" class="headerlink" title="UUID"></a>UUID</h1><h2 id="描述"><a href="#描述" class="headerlink" title="描述"></a>描述</h2><p>UUID (Universal Unique Identifier) 是存储在 int64 中的63位整数，由3部分构成，格式如下:</p>
 <pre><code>+--------------------------------------------------------------------------+
-| 1 Bit Unused | 41 Bit Timestamp |  10 Bit NodeID  |   12 Bit Sequence ID |
+| 1 Bit Unused | 39 Bit Timestamp |  16 Bit NodeID  |   8 Bit Sequence ID |
 +--------------------------------------------------------------------------+
 </code></pre><ul>
-<li>使用41位来存储具有毫秒精度的时间戳</li>
-<li>10位用于存储节点ID</li>
-<li>12位用于存储序号</li>
+<li>使用39位来存储具有毫秒精度的时间戳</li>
+<li>16位用于存储节点ID</li>
+<li>8位用于存储序号</li>
 </ul>
 <p></p>
 <h2 id="实现细节"><a href="#实现细节" class="headerlink" title="实现细节"></a>实现细节</h2><ul>
-<li>生成41位具有毫秒精度的时间戳</li>
-<li>将10位的节点ID追加到后面</li>
+<li>生成39位具有毫秒精度的时间戳</li>
+<li>将16位的节点ID追加到后面</li>
 <li><p>然后添加序列数，从0开始，在相同的毫秒中生成步长为1的递增序列，如果在相同的毫秒中生成的序列溢出了，则停止生成等待下一毫秒</p>
-<h2 id="理论性能"><a href="#理论性能" class="headerlink" title="理论性能"></a>理论性能</h2><p>1毫秒可以生成12位（0-4095）4096个UUID，理论上单机可以生成4096000个UUID/s</p>
+<h2 id="理论性能"><a href="#理论性能" class="headerlink" title="理论性能"></a>理论性能</h2><p>1毫秒可以生成8位（0-255）256个UUID，理论上单机可以生成256000个UUID/s</p>
 <h2 id="关键代码实现"><a href="#关键代码实现" class="headerlink" title="关键代码实现"></a>关键代码实现</h2><pre class=" language-go"><code class="language-go"><span class="token keyword">func</span> <span class="token punctuation">(</span>sf <span class="token operator">*</span>Snowflake<span class="token punctuation">)</span> <span class="token function">UUID</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">(</span><span class="token builtin">uint64</span><span class="token punctuation">,</span> <span class="token builtin">error</span><span class="token punctuation">)</span> <span class="token punctuation">{</span>
   <span class="token keyword">const</span> maskSequence <span class="token operator">=</span> <span class="token function">uint16</span><span class="token punctuation">(</span><span class="token number">1</span> <span class="token operator">&lt;&lt;</span> BitLenSequence <span class="token operator">-</span> <span class="token number">1</span><span class="token punctuation">)</span>
 
@@ -38,5 +38,22 @@
 </code></pre>
 </li>
 </ul>
-<h2 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h2><pre><code> coding
-</code></pre></article><br><br><span class="next-post"><a href="/2018/04/14/cache/" itemprop="url">Older Post ⇒</a></span><span class="prev-post"><a href="/2018/04/21/blockchain/" itemprop="url">⇐ Next Post </a></span><br><br><br></main></body></html>
+<h2 id="性能测试"><a href="#性能测试" class="headerlink" title="性能测试"></a>性能测试</h2><pre class=" language-go"><code class="language-go"><span class="token keyword">func</span> <span class="token function">BenchmarkSnowflake_UUID</span><span class="token punctuation">(</span>b <span class="token operator">*</span>testing<span class="token punctuation">.</span>B<span class="token punctuation">)</span> <span class="token punctuation">{</span>
+
+    sf <span class="token operator">:=</span> <span class="token function">NewSnowflack</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+
+    <span class="token keyword">for</span> n <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> n <span class="token operator">&lt;</span> b<span class="token punctuation">.</span>N<span class="token punctuation">;</span> n<span class="token operator">++</span> <span class="token punctuation">{</span>
+        sf<span class="token punctuation">.</span><span class="token function">UUID</span><span class="token punctuation">(</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre class=" language-shell"><code class="language-shell">$ go test -bench="."
+goos: darwin
+goarch: amd64
+pkg: github.com/willxm/snowflake
+BenchmarkSnowflake_UUID-4          50000             39036 ns/op
+PASS
+ok      github.com/willxm/snowflake     2.350s
+</code></pre>
+<p>1e9/39036=25617.3788298</p>
+</article><br><br><span class="next-post"><a href="/2018/04/14/cache/" itemprop="url">Older Post ⇒</a></span><span class="prev-post"><a href="/2018/04/21/blockchain/" itemprop="url">⇐ Next Post </a></span><br><br><br></main></body></html>
