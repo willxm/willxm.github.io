@@ -2,7 +2,7 @@
 title: 'MIT 6.824 Lab 1: MapReduce'
 date: 2018-08-18 01:32:59
 tags: MapReduce
-intro : MapReduce 学习笔记
+intro : MapReduce learning notes
 comments: false
 ---
 
