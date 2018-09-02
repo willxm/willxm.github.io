@@ -2,7 +2,7 @@
 title: K-Means algorithm implementation in Go
 date: 2018-09-02 21:51:43
 tags: k-means
-intro : two-dimension K-Means
+intro : Two-dimension K-Means
 comments: false
 ---
 
@@ -16,7 +16,7 @@ K-Means算法属于无监督学习的一种分类算法，K表示分组的数量
 1. 输入一组离散的数据P
 2. 根据K值生成在给定数据范围之内的K个随机点，叫做质心
 3. 计算P中每个点分别到K个质心的距离（下文采用欧式距离），将这个点归于最近的质心
-4. 重新计算质心点，```x=(x1+x2+...+xn)/n,y=(y1+y2+...+yn)/2```
+4. 重新计算质心点，```x=(x1+x2+...+xn)/n,y=(y1+y2+...+yn)/n```
 5. 重复上面的步骤3-4，直到结果收敛。
 
 
@@ -97,16 +97,18 @@ func kmeansStep(points, kps []kit.Point) []kit.Point {
 ## 测试
 INPUT
 
-X | Y
---|--
-0 | 0
-1 | 2
-3 | 1
-8 | 8
-9 | 10
-10 | 7
+X value | Y value
+:-----: | :-----:
+0       | 0
+1       | 2
+3       | 1
+8       | 8
+9       | 10
+10      | 7
 
+```
 K = 2
+```
 
 
 OUTPUT
