@@ -1,0 +1,119 @@
+<!DOCTYPE html><html lang="en-us"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1"><title>K-Means algorithm implementation in Go | willxm's blog</title><meta name="description" content="two-dimension K-Means"><meta name="generator" content="willxm's blog"><meta name="author" content="willxm"><meta name="keywords"><meta name="HandheldFriendly" content="True"><meta name="MobileOptimized" content="320"><meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1,user-scalable=0"><link rel="stylesheet" type="text/css" href="/styles/screen.css"><link rel="apple-touch-icon" sizes="57x57" href="/images/apple-touch-icon-57x57.png"><link rel="apple-touch-icon" sizes="60x60" href="/images/apple-touch-icon-60x60.png"><link rel="apple-touch-icon" sizes="72x72" href="/images/apple-touch-icon-72x72.png"><link rel="apple-touch-icon" sizes="76x76" href="/images/apple-touch-icon-76x76.png"><link rel="apple-touch-icon" sizes="114x114" href="/images/apple-touch-icon-114x114.png"><link rel="apple-touch-icon" sizes="120x120" href="/images/apple-touch-icon-120x120.png"><link rel="apple-touch-icon" sizes="144x144" href="/images/apple-touch-icon-144x144.png"><link rel="apple-touch-icon" sizes="152x152" href="/images/apple-touch-icon-152x152.png"><link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-180x180.png"><link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16.png"><link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32.png"><link rel="icon" type="image/png" sizes="96x96" href="/images/favicon-96x96.png"><link rel="icon" type="image/png" sizes="128x128" href="/images/favicon-128.png"><link rel="icon" type="image/png" sizes="196x196" href="/images/favicon-196x196.png"><meta name="msapplication-TileColor" content="#FFFFFF"><meta name="msapplication-TileImage" content="mstile-144x144.png"><meta name="msapplication-square70x70logo" content="mstile-70x70.png"><meta name="msapplication-square150x150logo" content="mstile-150x150.png"><meta name="msapplication-wide310x150logo" content="mstile-310x150.png"><meta name="msapplication-square310x310logo" content="mstile-310x310.png"><link rel="stylesheet" href="/css/prism.css" type="text/css"></head><body itemscope itemtype="https://schema.org/WebPage"><header itemscope itemtype="https://schema.org/WPHeader"><div class="logo"></div><h1><a href="/" alt="willxm's blog" title="willxm's blog" itemprop="headline">willxm's blog</a></h1><p itemprop="description">a boring person</p><nav itemscope itemtype="https://schema.org/SiteNavigationElement"><ul><li itemprop="name"><a href="/ " alt="home" title="home" itemprop="url">home</a></li><li itemprop="name"><a href="/articles" alt="articles" title="articles" itemprop="url">articles</a></li><li itemprop="name"><a href="/author" alt="author" title="author" itemprop="url">author</a></li></ul></nav><div class="space"></div></header><main itemscope itemtype="https://schema.org/Blog"><article class="full"><h1 itemprop="headline" class="post-heading">K-Means algorithm implementation in Go</h1><span class="page-tag-anchor"><a href="/tags/k-means" itemprop="url">#k-means
+&nbsp;&nbsp;</a></span><span class="post-meta"></span><br><br><h1 id="K-Means"><a href="#K-Means" class="headerlink" title="K-Means"></a>K-Means</h1><h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p>K-Means算法属于无监督学习的一种分类算法，K表示分组的数量。K-Means是基于距离的聚类算法，变量之间的距离越近，就表示相似度越大。</p>
+<h2 id="步骤"><a href="#步骤" class="headerlink" title="步骤"></a>步骤</h2><ol>
+<li>输入一组离散的数据P</li>
+<li>根据K值生成在给定数据范围之内的K个随机点，叫做质心</li>
+<li>计算P中每个点分别到K个质心的距离（下文采用欧式距离），将这个点归于最近的质心</li>
+<li>重新计算质心点，<code>x=(x1+x2+...+xn)/n,y=(y1+y2+...+yn)/2</code></li>
+<li>重复上面的步骤3-4，直到结果收敛。</li>
+</ol>
+<h2 id="实现"><a href="#实现" class="headerlink" title="实现"></a>实现</h2><pre class=" language-go"><code class="language-go"><span class="token keyword">type</span> Point <span class="token keyword">struct</span> <span class="token punctuation">{</span>
+    X <span class="token builtin">float64</span>
+    Y <span class="token builtin">float64</span>
+<span class="token punctuation">}</span>
+
+<span class="token comment" spellcheck="true">//EuclideanDistance 计算欧式距离</span>
+<span class="token keyword">func</span> <span class="token function">EuclideanDistance</span><span class="token punctuation">(</span>p1<span class="token punctuation">,</span> p2 Point<span class="token punctuation">)</span> <span class="token builtin">float64</span> <span class="token punctuation">{</span>
+    <span class="token keyword">return</span> math<span class="token punctuation">.</span><span class="token function">Sqrt</span><span class="token punctuation">(</span>math<span class="token punctuation">.</span><span class="token function">Pow</span><span class="token punctuation">(</span>p1<span class="token punctuation">.</span>X<span class="token operator">-</span>p2<span class="token punctuation">.</span>X<span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span> <span class="token operator">+</span> math<span class="token punctuation">.</span><span class="token function">Pow</span><span class="token punctuation">(</span>p1<span class="token punctuation">.</span>Y<span class="token operator">-</span>p2<span class="token punctuation">.</span>Y<span class="token punctuation">,</span> <span class="token number">2</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+<span class="token punctuation">}</span>
+<span class="token comment" spellcheck="true">// Centroid 计算质心</span>
+<span class="token keyword">func</span> <span class="token function">Centroid</span><span class="token punctuation">(</span>points <span class="token punctuation">[</span><span class="token punctuation">]</span>Point<span class="token punctuation">)</span> Point <span class="token punctuation">{</span>
+    l <span class="token operator">:=</span> <span class="token function">len</span><span class="token punctuation">(</span>points<span class="token punctuation">)</span>
+    sx<span class="token punctuation">,</span> sy <span class="token operator">:=</span> <span class="token number">0.0</span><span class="token punctuation">,</span> <span class="token number">0.0</span>
+    <span class="token keyword">for</span> i <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> l<span class="token punctuation">;</span> i<span class="token operator">++</span> <span class="token punctuation">{</span>
+        sx <span class="token operator">+=</span> points<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>X
+        sy <span class="token operator">+=</span> points<span class="token punctuation">[</span>i<span class="token punctuation">]</span><span class="token punctuation">.</span>Y
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> Point<span class="token punctuation">{</span>
+        X<span class="token punctuation">:</span> sx <span class="token operator">/</span> <span class="token function">float64</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span><span class="token punctuation">,</span>
+        Y<span class="token punctuation">:</span> sy <span class="token operator">/</span> <span class="token function">float64</span><span class="token punctuation">(</span>l<span class="token punctuation">)</span><span class="token punctuation">,</span>
+    <span class="token punctuation">}</span>
+<span class="token punctuation">}</span>
+</code></pre>
+<pre class=" language-go"><code class="language-go"><span class="token comment" spellcheck="true">// KMeans ...</span>
+<span class="token keyword">func</span> <span class="token function">KMeans</span><span class="token punctuation">(</span>points <span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point<span class="token punctuation">,</span> k<span class="token punctuation">,</span> iter <span class="token builtin">int</span><span class="token punctuation">)</span> <span class="token keyword">map</span><span class="token punctuation">[</span>kit<span class="token punctuation">.</span>Point<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point <span class="token punctuation">{</span>
+    minX<span class="token punctuation">,</span> maxX<span class="token punctuation">,</span> minY<span class="token punctuation">,</span> maxY <span class="token operator">:=</span> kit<span class="token punctuation">.</span><span class="token function">DataRange</span><span class="token punctuation">(</span>kit<span class="token punctuation">.</span><span class="token function">ToSlice</span><span class="token punctuation">(</span>points<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token comment" spellcheck="true">//Init k random points</span>
+    <span class="token keyword">var</span> randomPoints <span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point
+    <span class="token keyword">for</span> i <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> k<span class="token punctuation">;</span> i<span class="token operator">++</span> <span class="token punctuation">{</span>
+        x <span class="token operator">:=</span> kit<span class="token punctuation">.</span><span class="token function">Random</span><span class="token punctuation">(</span>minX<span class="token punctuation">,</span> maxX<span class="token punctuation">)</span>
+        y <span class="token operator">:=</span> kit<span class="token punctuation">.</span><span class="token function">Random</span><span class="token punctuation">(</span>minY<span class="token punctuation">,</span> maxY<span class="token punctuation">)</span>
+        randomPoints <span class="token operator">=</span> <span class="token function">append</span><span class="token punctuation">(</span>randomPoints<span class="token punctuation">,</span> kit<span class="token punctuation">.</span>Point<span class="token punctuation">{</span>X<span class="token punctuation">:</span> x<span class="token punctuation">,</span> Y<span class="token punctuation">:</span> y<span class="token punctuation">}</span><span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    <span class="token comment" spellcheck="true">// iteration</span>
+    kps <span class="token operator">:=</span> randomPoints
+    <span class="token keyword">for</span> i <span class="token operator">:=</span> <span class="token number">0</span><span class="token punctuation">;</span> i <span class="token operator">&lt;</span> iter<span class="token punctuation">;</span> i<span class="token operator">++</span> <span class="token punctuation">{</span>
+        kps <span class="token operator">=</span> <span class="token function">kmeansStep</span><span class="token punctuation">(</span>points<span class="token punctuation">,</span> kps<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    res <span class="token operator">:=</span> <span class="token function">kmeansClass</span><span class="token punctuation">(</span>points<span class="token punctuation">,</span> kps<span class="token punctuation">)</span>
+    log<span class="token punctuation">.</span><span class="token function">Printf</span><span class="token punctuation">(</span><span class="token string">"%+v"</span><span class="token punctuation">,</span> res<span class="token punctuation">)</span>
+    <span class="token keyword">return</span> res
+<span class="token punctuation">}</span>
+
+<span class="token keyword">func</span> <span class="token function">kmeansStep</span><span class="token punctuation">(</span>points<span class="token punctuation">,</span> kps <span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point<span class="token punctuation">)</span> <span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point <span class="token punctuation">{</span>
+    kmap <span class="token operator">:=</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token keyword">map</span><span class="token punctuation">[</span>kit<span class="token punctuation">.</span>Point<span class="token punctuation">]</span><span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point<span class="token punctuation">,</span> <span class="token function">len</span><span class="token punctuation">(</span>kps<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    <span class="token keyword">for</span> <span class="token boolean">_</span><span class="token punctuation">,</span> p <span class="token operator">:=</span> <span class="token keyword">range</span> points <span class="token punctuation">{</span>
+        minDist <span class="token operator">:=</span> <span class="token function">float64</span><span class="token punctuation">(</span>math<span class="token punctuation">.</span>MaxFloat64<span class="token punctuation">)</span>
+        point <span class="token operator">:=</span> kit<span class="token punctuation">.</span>Point<span class="token punctuation">{</span><span class="token punctuation">}</span>
+        <span class="token keyword">for</span> <span class="token boolean">_</span><span class="token punctuation">,</span> kp <span class="token operator">:=</span> <span class="token keyword">range</span> kps <span class="token punctuation">{</span>
+            <span class="token comment" spellcheck="true">//把距离小的点 append 到 map 中 进行分类</span>
+            dist <span class="token operator">:=</span> kit<span class="token punctuation">.</span><span class="token function">EuclideanDistance</span><span class="token punctuation">(</span>p<span class="token punctuation">,</span> kp<span class="token punctuation">)</span>
+            <span class="token keyword">if</span> minDist <span class="token operator">></span> dist <span class="token punctuation">{</span>
+                minDist <span class="token operator">=</span> dist
+                point<span class="token punctuation">.</span>X <span class="token operator">=</span> kp<span class="token punctuation">.</span>X
+                point<span class="token punctuation">.</span>Y <span class="token operator">=</span> kp<span class="token punctuation">.</span>Y
+            <span class="token punctuation">}</span>
+        <span class="token punctuation">}</span>
+        kmap<span class="token punctuation">[</span>point<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token function">append</span><span class="token punctuation">(</span>kmap<span class="token punctuation">[</span>point<span class="token punctuation">]</span><span class="token punctuation">,</span> p<span class="token punctuation">)</span>
+    <span class="token punctuation">}</span>
+    res <span class="token operator">:=</span> <span class="token function">make</span><span class="token punctuation">(</span><span class="token punctuation">[</span><span class="token punctuation">]</span>kit<span class="token punctuation">.</span>Point<span class="token punctuation">,</span> <span class="token function">len</span><span class="token punctuation">(</span>kps<span class="token punctuation">)</span><span class="token punctuation">)</span>
+    i <span class="token operator">:=</span> <span class="token number">0</span>
+    <span class="token keyword">for</span> <span class="token boolean">_</span><span class="token punctuation">,</span> v <span class="token operator">:=</span> <span class="token keyword">range</span> kmap <span class="token punctuation">{</span>
+        res<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> kit<span class="token punctuation">.</span><span class="token function">Centroid</span><span class="token punctuation">(</span>v<span class="token punctuation">)</span>
+        i<span class="token operator">++</span>
+    <span class="token punctuation">}</span>
+    <span class="token keyword">return</span> res
+<span class="token punctuation">}</span>
+</code></pre>
+<h2 id="测试"><a href="#测试" class="headerlink" title="测试"></a>测试</h2><p>INPUT</p>
+<table>
+<thead>
+<tr>
+<th>X</th>
+<th>Y</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>0</td>
+</tr>
+<tr>
+<td>1</td>
+<td>2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>1</td>
+</tr>
+<tr>
+<td>8</td>
+<td>8</td>
+</tr>
+<tr>
+<td>9</td>
+<td>10</td>
+</tr>
+<tr>
+<td>10</td>
+<td>7</td>
+</tr>
+</tbody>
+</table>
+<p>K = 2</p>
+<p>OUTPUT</p>
+<pre class=" language-go"><code class="language-go"><span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">9</span> Y<span class="token punctuation">:</span><span class="token number">8.333333333333334</span><span class="token punctuation">}</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">8</span> Y<span class="token punctuation">:</span><span class="token number">8</span><span class="token punctuation">}</span> <span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">9</span> Y<span class="token punctuation">:</span><span class="token number">10</span><span class="token punctuation">}</span> <span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">10</span> Y<span class="token punctuation">:</span><span class="token number">7</span><span class="token punctuation">}</span>
+<span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">1.3333333333333333</span> Y<span class="token punctuation">:</span><span class="token number">1</span><span class="token punctuation">}</span><span class="token punctuation">:</span><span class="token punctuation">[</span><span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">0</span> Y<span class="token punctuation">:</span><span class="token number">0</span><span class="token punctuation">}</span> <span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">1</span> Y<span class="token punctuation">:</span><span class="token number">2</span><span class="token punctuation">}</span> <span class="token punctuation">{</span>X<span class="token punctuation">:</span><span class="token number">3</span> Y<span class="token punctuation">:</span><span class="token number">1</span><span class="token punctuation">}</span>
+</code></pre>
+<p></p>
+</article><br><br><span class="next-post"><a href="/2018/08/26/MIT-6-824-Lab-2-Raft/" itemprop="url">Older Post ⇒</a></span><br><br><br></main></body></html>
